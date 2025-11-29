@@ -9,9 +9,7 @@
     "dev": "remix vite:dev --port 3100",
     "start": "remix-serve ./build/server/index.js",
     "typecheck": "tsc",
-    "postinstall": "prisma generate",
-    "db:push": "prisma db push",
-    "db:studio": "prisma studio"
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@remix-run/node": "^2.17.2",

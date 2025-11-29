@@ -3,7 +3,7 @@ import { json, redirect, unstable_parseMultipartFormData } from "@remix-run/node
 import { Form, Link, useActionData, useLoaderData, useNavigation } from "@remix-run/react";
 import { productService } from "~/services/product.server";
 import { requireAdmin } from "~/utils/session.server";
-import { v2 as cloudinary } from "cloudinary";
+import { cloudinary } from "~/lib/cloudinary.server";
 import { writeAsyncIterableToWritable } from "@remix-run/node";
 import { PassThrough } from "stream";
 
@@ -13,57 +13,82 @@ export const meta: MetaFunction = () => {
 
 const styles = {
   container: {
-    padding: "2rem",
-    maxWidth: "800px",
-    margin: "0 auto",
+    display: "flex",
+    minHeight: "100vh",
+    backgroundColor: "#f5f7fa",
   },
-  form: {
+  sidebar: {
+    width: "250px",
+    backgroundColor: "#2d3748",
+    color: "white",
+    padding: "2rem 0",
+    position: "fixed" as const,
+    height: "100vh",
+    display: "flex",
+    flexDirection: "column" as const,
+  },
+  main: {
+    marginLeft: "250px",
+    flex: 1,
+    padding: "2rem",
+  },
+  header: {
+    backgroundColor: "white",
+    padding: "1.5rem 2rem",
+    borderRadius: "8px",
+    marginBottom: "2rem",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+  },
+  contentSection: {
     backgroundColor: "white",
     padding: "2rem",
-    borderRadius: "12px",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+    borderRadius: "8px",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+  },
+  navItem: {
+    padding: "0.75rem 2rem",
+    color: "white",
+    textDecoration: "none",
+    display: "block",
+    transition: "background-color 0.2s",
   },
   input: {
     width: "100%",
     padding: "0.75rem",
-    border: "2px solid #e0e0e0",
-    borderRadius: "8px",
-    fontSize: "1rem",
+    border: "2px solid #e2e8f0",
+    borderRadius: "6px",
+    fontSize: "0.9rem",
     boxSizing: "border-box" as const,
   },
   textarea: {
     width: "100%",
     padding: "0.75rem",
-    border: "2px solid #e0e0e0",
-    borderRadius: "8px",
-    fontSize: "1rem",
+    border: "2px solid #e2e8f0",
+    borderRadius: "6px",
+    fontSize: "0.9rem",
     minHeight: "120px",
     boxSizing: "border-box" as const,
   },
   button: {
     padding: "0.75rem 1.5rem",
     border: "none",
-    borderRadius: "8px",
-    fontSize: "1rem",
+    borderRadius: "6px",
+    fontSize: "0.9rem",
     fontWeight: "600",
     cursor: "pointer",
+    textDecoration: "none",
+    display: "inline-block",
+    textAlign: "center" as const,
   },
   errorBox: {
     padding: "1rem",
-    backgroundColor: "#fee",
-    color: "#c00",
+    backgroundColor: "#fed7d7",
+    color: "#742a2a",
     borderRadius: "8px",
     marginBottom: "1.5rem",
-    border: "1px solid #fcc",
+    border: "1px solid #fc8181",
   },
 };
-
-// Cloudinary 설정
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
 
 async function uploadImageToCloudinary(data: AsyncIterable<Uint8Array>) {
   const uploadPromise = new Promise<{ url: string; publicId: string }>((resolve, reject) => {
@@ -158,18 +183,104 @@ export default function NewProduct() {
 
   return (
     <div style={styles.container}>
-      <div style={{ marginBottom: "2rem" }}>
-        <Link to="/products" style={{ color: "#667eea", textDecoration: "none" }}>
-          ← 제품 목록으로
-        </Link>
-      </div>
+      {/* Sidebar */}
+      <aside style={styles.sidebar}>
+        <div style={{ padding: "0 2rem", marginBottom: "2rem" }}>
+          <h2 style={{ margin: 0, fontSize: "1.5rem", fontWeight: "bold" }}>
+            TechPlan
+          </h2>
+          <p style={{ margin: "0.5rem 0 0 0", fontSize: "0.875rem", opacity: 0.8 }}>
+            관리자 패널
+          </p>
+        </div>
 
-      <h1>새 제품 추가</h1>
-      <p style={{ color: "#666", marginBottom: "2rem" }}>
-        관리자: {admin.email}
-      </p>
+        <nav style={{ flex: 1, overflowY: "auto" }}>
+          <Link
+            to="/"
+            style={styles.navItem}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#4a5568"}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+          >
+            📊 대시보드
+          </Link>
+          <Link
+            to="/products"
+            style={styles.navItem}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#4a5568"}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+          >
+            📦 제품 관리
+          </Link>
+          <Link
+            to="/products/new"
+            style={{
+              ...styles.navItem,
+              backgroundColor: "#4a5568",
+            }}
+          >
+            ➕ 제품 추가
+          </Link>
+          <Form method="post" action="/logout">
+            <button
+              type="submit"
+              style={{
+                ...styles.navItem,
+                marginTop: "2rem",
+                paddingTop: "1.5rem",
+                width: "100%",
+                textAlign: "left",
+                backgroundColor: "transparent",
+                border: "none",
+                borderTop: "1px solid #4a5568",
+                cursor: "pointer",
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#4a5568"}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+            >
+              🚪 로그아웃
+            </button>
+          </Form>
+        </nav>
 
-      <div style={styles.form}>
+        <div style={{
+          margin: "0 2rem 2rem 2rem",
+          padding: "1rem",
+          backgroundColor: "#1a202c",
+          borderRadius: "6px",
+        }}>
+          <p style={{ margin: 0, fontSize: "0.75rem", opacity: 0.7 }}>로그인 계정</p>
+          <p style={{ margin: "0.25rem 0 0 0", fontSize: "0.875rem", fontWeight: "600" }}>
+            {admin.email}
+          </p>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main style={styles.main}>
+        {/* Header */}
+        <div style={styles.header}>
+          <Link
+            to="/products"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              color: "#667eea",
+              textDecoration: "none",
+              fontSize: "0.875rem",
+              fontWeight: "600",
+              marginBottom: "1rem",
+            }}
+          >
+            ← 제품 목록으로
+          </Link>
+          <h1 style={{ margin: 0, fontSize: "1.75rem", color: "#2d3748" }}>
+            새 제품 추가
+          </h1>
+        </div>
+
+        {/* Form Content */}
+        <div style={styles.contentSection}>
         {actionData?.error && (
           <div style={styles.errorBox}>
             {actionData.error}
@@ -260,7 +371,8 @@ export default function NewProduct() {
             </Link>
           </div>
         </Form>
-      </div>
+        </div>
+      </main>
     </div>
   );
 }
